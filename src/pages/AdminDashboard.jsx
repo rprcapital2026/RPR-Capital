@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { generateTransactionSlipPDF } from '../utils/pdfGenerator';
 import {
   ShieldAlert,
   Users,
@@ -2026,6 +2027,7 @@ export function AdminDashboard({ onNavigate }) {
             </div>
 
             <div className="staff-receipt-voucher">
+              <div className="staff-receipt-watermark" />
               <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em' }}>
                   RPR : RAJASTHAN PAY RESERVE CAPITAL
@@ -2062,8 +2064,15 @@ export function AdminDashboard({ onNavigate }) {
             </div>
 
             <div className="no-print" style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button className="btn btn-primary" onClick={() => window.print()} style={{ flex: 1 }}>
-                <Printer size={15} /> Print Audit Voucher
+              <button
+                className="btn btn-primary"
+                onClick={() => generateTransactionSlipPDF(viewingVoucher, {}, currentUser)}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'linear-gradient(135deg, #1d4ed8, #7c3aed)', border: 'none' }}
+              >
+                <FileText size={15} /> Download Official PDF
+              </button>
+              <button className="btn btn-secondary" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Printer size={15} /> Print Voucher
               </button>
               <button className="btn btn-secondary" onClick={() => setViewingVoucher(null)}>
                 Close

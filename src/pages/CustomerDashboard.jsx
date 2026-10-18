@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { generateTransactionSlipPDF, generateStatementPDF } from '../utils/pdfGenerator';
 import {
   User,
   ShieldCheck,
@@ -217,67 +218,13 @@ export function CustomerDashboard({ onNavigate }) {
     setTimeout(() => setComplaintSuccess(false), 2500);
   };
 
-  const downloadReceipt = (item) => {
-    const text = `=====================================================
-RPR : RAJASTHAN PAY RESERVE CAPITAL
-Jamawaramgarh Branch, Jaipur, Rajasthan
-Official Transaction Receipt
-=====================================================
-Receipt No:       ${item.receiptNumber || 'RCPT-JMW-2026'}
-Date:             ${item.date}
-Account Number:   ${currentUser?.accountNumber}
-Customer Name:    ${currentUser?.name}
-Customer ID:      ${currentUser?.customerId}
-Transaction Type: ${cleanType(item.type, item.amount)}
-Amount:           ₹${Math.abs(item.amount).toLocaleString('en-IN')}
-Payment Mode:     ${item.mode}
-Txn Reference:    ${item.txnRef}
-Balance After:    ₹${Number(item.balanceAfter || currentNetBalance).toLocaleString('en-IN')}
-Received By:      ${item.receivedBy || 'Staff Officer'}
-Branch Hub:       ${cleanBranch}
-=====================================================
-Computer generated official receipt of RPR Capital.`;
-
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${item.receiptNumber || 'Receipt'}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadReceipt = async (item) => {
+    if (!item) return;
+    await generateTransactionSlipPDF(item, currentUser);
   };
 
-  const downloadStatement = () => {
-    const text = `=====================================================
-RPR : RAJASTHAN PAY RESERVE CAPITAL
-Official Customer Passbook & Statement
-Branch: ${cleanBranch}
-=====================================================
-Customer Name:         ${currentUser?.name}
-Customer ID:           ${currentUser?.customerId}
-Account Number:        ${currentUser?.accountNumber}
-Contact / Mobile:      ${currentUser?.phone}
-Address:               ${currentUser?.address}
-KYC Status:            ${currentUser?.kycStatus}
-Total Deposits:        ₹${Number(totalDeposits).toLocaleString('en-IN')}
-Total Withdrawals:     ₹${Number(totalWithdrawn).toLocaleString('en-IN')}
-Current Net Balance:   ₹${Number(currentNetBalance).toLocaleString('en-IN')}
-Active Loan Balance:   ₹${Number(currentUser?.loans?.activeLoan || 0).toLocaleString('en-IN')}
-Outstanding Balance:   ₹${Number(currentUser?.loans?.outstanding || 0).toLocaleString('en-IN')}
-Upcoming Monthly EMI:  ₹${Number(currentUser?.loans?.monthlyEmi || 0).toLocaleString('en-IN')} (Due: ${currentUser?.loans?.nextPaymentDate || '05 Nov 2026'})
-=====================================================
-TRANSACTION LEDGER (DIGITAL PASSBOOK):
-${customerDeposits.map(d => `[${d.date}] ${cleanType(d.type, d.amount).padEnd(16)} ₹${Math.abs(d.amount).toLocaleString('en-IN').padEnd(10)} Mode: ${d.mode} | Bal: ₹${Number(d.balanceAfter || 0).toLocaleString('en-IN')}`).join('\n')}
-=====================================================
-End of Official Passbook Statement.`;
-
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Passbook_${currentUser?.accountNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadStatement = async () => {
+    await generateStatementPDF(currentUser, customerDeposits, currentNetBalance, cleanBranch);
   };
 
   return (

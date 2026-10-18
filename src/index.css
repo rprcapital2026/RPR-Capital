@@ -2188,22 +2188,38 @@ input[type="range"]::-webkit-slider-thumb {
   position: relative;
   font-family: var(--font-body);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 2px double #1e3a8a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .staff-receipt-watermark {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-25deg);
-  font-size: 3.2rem;
-  font-weight: 900;
-  color: rgba(29, 78, 216, 0.04);
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background-image: url('/logo-icon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.08;
   pointer-events: none;
-  white-space: nowrap;
-  text-transform: uppercase;
+  z-index: 0;
+}
+
+.staff-receipt-voucher > *:not(.staff-receipt-watermark) {
+  position: relative;
+  z-index: 1;
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -2218,7 +2234,7 @@ input[type="range"]::-webkit-slider-thumb {
     margin: 0;
     padding: 1.5rem;
     box-shadow: none !important;
-    border: 1px solid #334155 !important;
+    border: 2px double #1e3a8a !important;
     background: #ffffff !important;
   }
   .no-print {
