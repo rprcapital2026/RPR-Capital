@@ -36,14 +36,17 @@ app.use('/api', apiRouter);
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// Fallback all other GET requests to dist/index.html for React SPA Router
-app.get('*', (req, res) => {
-  const indexPath = path.resolve(distPath, 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      res.status(200).send('RPR Capital API server is running. Build the frontend with `npm run build` to view the UI.');
-    }
-  });
+// Fallback all unhandled GET requests to dist/index.html for React SPA Router
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    const indexPath = path.resolve(distPath, 'index.html');
+    return res.sendFile(indexPath, (err) => {
+      if (err) {
+        res.status(200).send('RPR Capital API server is running. Build the frontend with `npm run build` to view the UI.');
+      }
+    });
+  }
+  next();
 });
 
 // Safety handlers to prevent process termination
