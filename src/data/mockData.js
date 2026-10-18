@@ -53,8 +53,8 @@ export const INITIAL_DATA = {
     {
       id: "usr_admin_1",
       name: "Rohit Meena",
-      email: "admin@rprcapital.in",
-      password: "admin123",
+      email: "rprcapital2624@gmail.com",
+      password: "Admin@rprcapital",
       role: "admin",
       title: "Company Owner & Super Admin",
       avatarBg: "gradient-admin",

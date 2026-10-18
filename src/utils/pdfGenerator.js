@@ -68,44 +68,45 @@ export async function generateTransactionSlipPDF(item = {}, customer = {}, staff
   const receivedBy = item.receivedBy || staffUser.name || 'Pooja Sharma (Staff Officer)';
   const hashUid = `RPR-VCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-  // Create temporary container
+  // Create temporary container with safety margin
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.left = '-9999px';
   container.style.top = '0';
-  container.style.width = '780px';
+  container.style.width = '820px';
   container.style.backgroundColor = '#ffffff';
   container.style.fontFamily = "'Inter', 'Segoe UI', Arial, sans-serif";
   container.style.color = '#0f172a';
   container.style.zIndex = '999999';
 
   container.innerHTML = `
-    <div style="
-      position: relative;
-      background: #ffffff;
-      padding: 32px 36px;
-      box-sizing: border-box;
-      border: 3px double #1e3a8a;
-      border-radius: 8px;
-      overflow: hidden;
-      line-height: 1.45;
-    ">
-      <!-- Watermark Logo Background -->
+    <div style="background: #ffffff; padding: 14px; box-sizing: border-box;">
       <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 320px;
-        height: 320px;
-        background-image: url('${logoUrl}');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        opacity: 0.08;
-        pointer-events: none;
-        z-index: 1;
-      "></div>
+        position: relative;
+        background: #ffffff;
+        padding: 26px 32px 22px 32px;
+        box-sizing: border-box;
+        border: 3px double #1e3a8a;
+        border-radius: 8px;
+        overflow: hidden;
+        line-height: 1.4;
+      ">
+        <!-- Watermark Logo Background -->
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 300px;
+          height: 300px;
+          background-image: url('${logoUrl}');
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
+          opacity: 0.08;
+          pointer-events: none;
+          z-index: 1;
+        "></div>
 
       <!-- Content wrapper -->
       <div style="position: relative; z-index: 2;">
@@ -333,13 +334,14 @@ export async function generateTransactionSlipPDF(item = {}, customer = {}, staff
         </div>
       </div>
     </div>
+  </div>
   `;
 
   document.body.appendChild(container);
 
   try {
     const canvas = await html2canvas(container, {
-      scale: 2.5,
+      scale: 2.2,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false
@@ -355,11 +357,20 @@ export async function generateTransactionSlipPDF(item = {}, customer = {}, staff
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pdfWidth - 12; // 6mm margin each side
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    const yOffset = Math.max(4, (pdfHeight - imgHeight) / 2);
-    pdf.addImage(imgData, 'PNG', 6, yOffset, imgWidth, imgHeight);
+    // 8mm safety margin on all sides guarantees all borders are 100% visible
+    const margin = 8;
+    const maxW = pdfWidth - (margin * 2);
+    const maxH = pdfHeight - (margin * 2);
+
+    const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
+    const imgWidth = canvas.width * scale;
+    const imgHeight = canvas.height * scale;
+
+    const xOffset = (pdfWidth - imgWidth) / 2;
+    const yOffset = (pdfHeight - imgHeight) / 2;
+
+    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
 
     const safeFilename = `${receiptNo}.pdf`;
     pdf.save(safeFilename);
@@ -412,16 +423,17 @@ export async function generateStatementPDF(customer = {}, deposits = [], current
   container.style.zIndex = '999999';
 
   container.innerHTML = `
-    <div style="
-      position: relative;
-      background: #ffffff;
-      padding: 36px 40px;
-      box-sizing: border-box;
-      border: 3px double #1e3a8a;
-      border-radius: 8px;
-      overflow: hidden;
-      line-height: 1.4;
-    ">
+    <div style="background: #ffffff; padding: 14px; box-sizing: border-box;">
+      <div style="
+        position: relative;
+        background: #ffffff;
+        padding: 30px 36px 26px 36px;
+        box-sizing: border-box;
+        border: 3px double #1e3a8a;
+        border-radius: 8px;
+        overflow: hidden;
+        line-height: 1.4;
+      ">
       <!-- Watermark Logo Background -->
       <div style="
         position: absolute;
@@ -623,8 +635,10 @@ export async function generateStatementPDF(customer = {}, deposits = [], current
         ">
           Official digital account statement issued by Rajasthan Pay Reserve Capital. Valid without physical signature.
         </div>
+        </div>
       </div>
     </div>
+  </div>
   `;
 
   document.body.appendChild(container);
@@ -646,10 +660,20 @@ export async function generateStatementPDF(customer = {}, deposits = [], current
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pdfWidth - 14; // 7mm margins
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    pdf.addImage(imgData, 'PNG', 7, 8, imgWidth, Math.min(imgHeight, pdfHeight - 16));
+    // 8mm margin
+    const margin = 8;
+    const maxW = pdfWidth - (margin * 2);
+    const maxH = pdfHeight - (margin * 2);
+
+    const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
+    const imgWidth = canvas.width * scale;
+    const imgHeight = canvas.height * scale;
+
+    const xOffset = (pdfWidth - imgWidth) / 2;
+    const yOffset = (pdfHeight - imgHeight) / 2;
+
+    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
 
     const safeFilename = `Passbook_${accNo.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
     pdf.save(safeFilename);

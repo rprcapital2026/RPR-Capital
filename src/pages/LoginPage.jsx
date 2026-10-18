@@ -36,19 +36,13 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
   const [resetReqReason, setResetReqReason] = useState('');
   const [resetReqFeedback, setResetReqFeedback] = useState(null);
 
-  // Sync preset credentials when tab changes
+  // Reset form when switching tabs - do not auto-fill sensitive credentials
   useEffect(() => {
     setError('');
+    setEmail('');
+    setPassword('');
     if (isAdminDirect) {
       setActiveTab('admin');
-      setEmail('admin@rprcapital.in');
-      setPassword('admin123');
-    } else if (activeTab === 'staff') {
-      setEmail('staff@rprcapital.in');
-      setPassword('staff123');
-    } else {
-      setEmail('vikram@rprcapital.in');
-      setPassword('password123');
     }
   }, [activeTab, isAdminDirect]);
 
@@ -66,18 +60,11 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
     }
   };
 
-  const handleQuickFill = (roleType) => {
+  const handleTabSwitch = (roleType) => {
     setActiveTab(roleType);
-    if (roleType === 'customer') {
-      setEmail('vikram@rprcapital.in');
-      setPassword('password123');
-    } else if (roleType === 'staff') {
-      setEmail('staff@rprcapital.in');
-      setPassword('staff123');
-    } else if (roleType === 'admin') {
-      setEmail('admin@rprcapital.in');
-      setPassword('admin123');
-    }
+    setError('');
+    setEmail('');
+    setPassword('');
   };
 
   return (
@@ -137,7 +124,7 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
           </h1>
           <p style={{ fontSize: '0.84rem', color: '#64748b', margin: 0 }}>
             {isAdminDirect
-              ? 'Authorized Administration • Rohit Meena'
+              ? 'Secure Administrative Control & Governance Access'
               : 'Enter your verified credentials to access your dashboard'}
           </p>
         </div>
@@ -157,7 +144,7 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
           >
             <button
               type="button"
-              onClick={() => handleQuickFill('customer')}
+              onClick={() => handleTabSwitch('customer')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -180,7 +167,7 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
 
             <button
               type="button"
-              onClick={() => handleQuickFill('staff')}
+              onClick={() => handleTabSwitch('staff')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -204,22 +191,21 @@ export function LoginPage({ onNavigate, onLoginSuccess, initialRole = 'customer'
         ) : (
           <div
             style={{
-              background: '#eff6ff',
-              border: '1px solid #bfdbfe',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
               borderRadius: 'var(--radius-md)',
-              padding: '0.75rem 1rem',
-              marginBottom: '1.5rem',
+              padding: '0.65rem 0.9rem',
+              marginBottom: '1.25rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.6rem',
-              color: '#1d4ed8',
-              fontSize: '0.84rem'
+              gap: '0.55rem',
+              color: '#1e40af',
+              fontSize: '0.82rem',
+              fontWeight: 600
             }}
           >
-            <Crown size={18} />
-            <div>
-              <strong>Super Administrator Mode</strong> (Rohit Meena)
-            </div>
+            <ShieldCheck size={16} color="#2563eb" />
+            <span>Authorized Executive Administration</span>
           </div>
         )}
 

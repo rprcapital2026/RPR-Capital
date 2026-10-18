@@ -646,23 +646,50 @@ export function DataProvider({ children }) {
     return { success: true, staff: newStaff };
   };
 
-  // 8. Admin Toggles User Status (Active / Frozen)
-  const toggleUserStatus = (userId, actor) => {
+  // 8. Admin Sets User Authority (Active / Blocked / Revoked)
+  const setUserAuthority = (userId, newStatus, actor) => {
     setData((prev) => {
-      const user = prev.users.find((u) => u.id === userId);
+      const user = prev.users.find((u) => u.id === userId || u.staffId === userId);
       if (!user) return prev;
-      const newStatus = user.status === 'Active' ? 'Suspended/Frozen' : 'Active';
+
+      const targetId = user.id;
+      const updatedUsers = prev.users.map((u) => {
+        if (u.id === targetId) {
+          const updated = { ...u, status: newStatus };
+          if (newStatus === 'Blocked' || newStatus === 'Revoked') {
+            if (updated.attendance) {
+              updated.attendance = { ...updated.attendance, status: 'Checked Out' };
+            }
+          }
+          return updated;
+        }
+        return u;
+      });
+
+      const updatedDelegations = (prev.delegatedAdmins || []).map((del) => {
+        if ((del.staffId === user.staffId || del.staffId === user.id) && (newStatus === 'Blocked' || newStatus === 'Revoked')) {
+          return { ...del, status: 'Revoked' };
+        }
+        return del;
+      });
+
+      const actionTitle = newStatus === 'Blocked' 
+        ? 'Account Blocked: Access Suspended' 
+        : newStatus === 'Revoked' 
+          ? 'Access Permanently Revoked' 
+          : 'Account Access Restored';
 
       return {
         ...prev,
-        users: prev.users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)),
+        users: updatedUsers,
+        delegatedAdmins: updatedDelegations,
         auditLogs: [
           {
             id: `LOG-${Date.now().toString().slice(-4)}`,
-            action: `User Status: ${newStatus}`,
-            actor: actor.name,
+            action: `Staff Authority: ${newStatus}`,
+            actor: actor?.name || 'Executive Admin Rohit Meena',
             target: `${user.name} (${user.role})`,
-            details: `Status altered to ${newStatus}`,
+            details: `${actionTitle} by Executive Administration`,
             timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
           },
           ...prev.auditLogs
@@ -670,8 +697,16 @@ export function DataProvider({ children }) {
       };
     });
 
-    apiCall(`/api/users/${userId}/status`, 'PUT', { actor });
+    apiCall(`/api/users/${userId}/authority`, 'PUT', { status: newStatus, actor });
   };
+
+  const toggleUserStatus = (userId, actor) => {
+    const user = data.users.find((u) => u.id === userId || u.staffId === userId);
+    if (!user) return;
+    const nextStatus = user.status === 'Active' ? 'Blocked' : 'Active';
+    setUserAuthority(userId, nextStatus, actor);
+  };
+
 
   // 9. Create Self-Help Group (SHG)
   const createGroup = (groupData, creator) => {
@@ -1072,6 +1107,7 @@ export function DataProvider({ children }) {
         submitComplaint,
         createStaff,
         toggleUserStatus,
+        setUserAuthority,
         updateUserProfileData,
         resetUserPassword,
         requestPasswordReset,

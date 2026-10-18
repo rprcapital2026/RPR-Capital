@@ -40,7 +40,8 @@ import {
   Filter,
   Send,
   Zap,
-  MapPin
+  MapPin,
+  ShieldOff
 } from 'lucide-react';
 
 export function AdminDashboard({ onNavigate }) {
@@ -58,6 +59,7 @@ export function AdminDashboard({ onNavigate }) {
   const createStaff = data.createStaff;
   const createDirectCustomer = data.createDirectCustomer || data.registerCustomer;
   const toggleUserStatus = data.toggleUserStatus;
+  const setUserAuthority = data.setUserAuthority;
   const updateLoanStatus = data.updateLoanStatus;
   const resetUserPassword = data.resetUserPassword;
   const grantDelegatedAdmin = data.grantDelegatedAdmin;
@@ -67,6 +69,13 @@ export function AdminDashboard({ onNavigate }) {
 
   // Active Menu Tab (Left Vertical Sidebar)
   const [activeMenu, setActiveMenu] = useState('overview');
+
+  // Headquarter Configuration
+  const [adminHQ, setAdminHQ] = useState(() => {
+    return localStorage.getItem('rpr_admin_hq') || company?.headquarters || 'Jaipur Central HQ';
+  });
+  const [showHQModal, setShowHQModal] = useState(false);
+  const [hqInput, setHqInput] = useState(adminHQ);
 
   // Search & Filter States
   const [searchCust, setSearchCust] = useState('');
@@ -301,6 +310,38 @@ export function AdminDashboard({ onNavigate }) {
     }
   };
 
+  // Handler: Update Staff Authority (Block / Revoke / Active)
+  const handleUpdateStaffAuthority = (targetStaff, newStatus) => {
+    if (!setUserAuthority) return;
+    setUserAuthority(targetStaff.id, newStatus, currentUser);
+    if (newStatus === 'Blocked') {
+      setFeedback({ type: 'error', text: `Staff Officer ${targetStaff.name} has been BLOCKED. Login access denied.` });
+    } else if (newStatus === 'Revoked') {
+      setFeedback({ type: 'error', text: `Access REVOKED for ${targetStaff.name}. Duty shift terminated & permissions cancelled.` });
+    } else {
+      setFeedback({ type: 'success', text: `Staff privileges restored to Active for ${targetStaff.name}.` });
+    }
+  };
+
+  // Handler: Save Headquarter
+  const handleSaveHQ = (e) => {
+    e.preventDefault();
+    const trimmed = hqInput.trim();
+    if (!trimmed) {
+      setFeedback({ type: 'error', text: 'Headquarter name cannot be empty.' });
+      return;
+    }
+    setAdminHQ(trimmed);
+    try {
+      localStorage.setItem('rpr_admin_hq', trimmed);
+    } catch {}
+    if (company) {
+      company.headquarters = trimmed;
+    }
+    setShowHQModal(false);
+    setFeedback({ type: 'success', text: `Headquarter location updated to: ${trimmed}` });
+  };
+
   return (
     <div className="portal-viewport-layout">
       {/* ===================== PINNED LEFT SIDEBAR ===================== */}
@@ -316,36 +357,50 @@ export function AdminDashboard({ onNavigate }) {
           </div>
         </div>
 
-        {/* Master Control Status Strip */}
+        {/* Headquarter Setting & Oversight Strip */}
         <div
           className="sidebar-attendance-widget"
           style={{
-            background: 'linear-gradient(90deg, #f5f3ff, #ede9fe)',
-            padding: '0.24rem 0.55rem',
+            background: '#f8fafc',
+            padding: '0.35rem 0.55rem',
             borderRadius: 'var(--radius-sm)',
-            border: '1px solid #ddd6fe',
-            marginBottom: '0.35rem',
+            border: '1px solid #e2e8f0',
+            marginBottom: '0.45rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: '0.7rem',
+            fontSize: '0.72rem',
             flexShrink: 0
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 800, color: '#6d28d9' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed' }} />
-            EXECUTIVE OVERSIGHT
+          <div style={{ minWidth: 0, flex: 1, marginRight: '0.35rem' }}>
+            <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#1d4ed8' }} />
+              Headquarter
+            </div>
+            <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.74rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={adminHQ}>
+              {adminHQ}
+            </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#1d4ed8', fontSize: '0.72rem' }}>
-            Jaipur Central HQ
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ fontSize: '0.68rem', padding: '0.18rem 0.45rem', height: 'auto', borderRadius: '5px', flexShrink: 0 }}
+            onClick={() => {
+              setHqInput(adminHQ);
+              setShowHQModal(true);
+            }}
+            title="Change Headquarter Location"
+          >
+            <Edit3 size={11} /> Change
+          </button>
         </div>
 
-        {/* 10 Navigation Menus (Left Vertical Bar) */}
+        {/* 9 Clean Navigation Menus (Left Vertical Bar) */}
         <nav className="portal-sidebar-nav">
           <button
             id="btn-admin-overview"
-            className={`tab-btn ${activeMenu === 'overview' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveMenu('overview')}
           >
             <Layers size={15} /> Dashboard Overview
@@ -353,7 +408,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-activity"
-            className={`tab-btn ${activeMenu === 'activity' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'activity' ? 'active' : ''}`}
             onClick={() => setActiveMenu('activity')}
           >
             <Activity size={15} /> Live Activity & Feed
@@ -361,7 +416,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-customers"
-            className={`tab-btn ${activeMenu === 'customers' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'customers' ? 'active' : ''}`}
             onClick={() => setActiveMenu('customers')}
           >
             <Users size={15} /> Master Customer Directory ({customers.length})
@@ -369,7 +424,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-staff"
-            className={`tab-btn ${activeMenu === 'staff' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'staff' ? 'active' : ''}`}
             onClick={() => setActiveMenu('staff')}
           >
             <UserCheck size={15} /> Staff & Attendance ({staffMembers.length})
@@ -377,7 +432,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-applications"
-            className={`tab-btn ${activeMenu === 'applications' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'applications' ? 'active' : ''}`}
             onClick={() => setActiveMenu('applications')}
           >
             <Clock size={15} /> Inbound Queue ({pendingApps.length})
@@ -385,7 +440,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-ledger"
-            className={`tab-btn ${activeMenu === 'ledger' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'ledger' ? 'active' : ''}`}
             onClick={() => setActiveMenu('ledger')}
           >
             <IndianRupee size={15} /> Financial Inflow & Ledger
@@ -393,7 +448,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-passwords"
-            className={`tab-btn ${activeMenu === 'passwords' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'passwords' ? 'active' : ''}`}
             onClick={() => setActiveMenu('passwords')}
           >
             <Key size={15} /> Password Reset Desk {pendingResetReqs.length > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.62rem', padding: '0.1rem 0.35rem', borderRadius: '10px', marginLeft: 'auto' }}>{pendingResetReqs.length}</span>}
@@ -401,7 +456,7 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-delegation"
-            className={`tab-btn ${activeMenu === 'delegation' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'delegation' ? 'active' : ''}`}
             onClick={() => setActiveMenu('delegation')}
           >
             <Share2 size={15} /> Delegated Admin Access ({delegatedAdmins.filter(d => d.status === 'Active').length})
@@ -409,18 +464,10 @@ export function AdminDashboard({ onNavigate }) {
 
           <button
             id="btn-admin-logs"
-            className={`tab-btn ${activeMenu === 'logs' ? 'active purple' : ''}`}
+            className={`tab-btn ${activeMenu === 'logs' ? 'active' : ''}`}
             onClick={() => setActiveMenu('logs')}
           >
             <ShieldAlert size={15} /> Audit & Security Logs
-          </button>
-
-          <button
-            id="btn-admin-mandate"
-            className={`tab-btn ${activeMenu === 'mandate' ? 'active purple' : ''}`}
-            onClick={() => setActiveMenu('mandate')}
-          >
-            <Award size={15} /> Executive Governance
           </button>
         </nav>
 
@@ -432,7 +479,7 @@ export function AdminDashboard({ onNavigate }) {
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #7c3aed, #0284c7)',
+                background: 'linear-gradient(135deg, #1d4ed8, #0284c7)',
                 color: '#ffffff',
                 fontSize: '0.92rem',
                 fontWeight: 800,
@@ -440,7 +487,7 @@ export function AdminDashboard({ onNavigate }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)'
+                boxShadow: '0 2px 6px rgba(29, 78, 216, 0.25)'
               }}
             >
               RM
@@ -449,17 +496,17 @@ export function AdminDashboard({ onNavigate }) {
               <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 Rohit Meena
               </div>
-              <div style={{ fontSize: '0.67rem', color: '#7c3aed', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.67rem', color: '#1d4ed8', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                 Director & Master Admin
               </div>
               <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
-                {currentUser?.email || 'admin@rprcapital.in'}
+                {currentUser?.email || 'rprcapital2624@gmail.com'}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-            <span className="badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.12rem 0.4rem' }}>
+            <span className="badge badge-blue" style={{ fontSize: '0.6rem', padding: '0.12rem 0.4rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
               ● Master Authority
             </span>
             <span style={{ fontSize: '0.62rem', color: '#10b981', fontWeight: 600 }}>
@@ -471,7 +518,7 @@ export function AdminDashboard({ onNavigate }) {
             id="btn-admin-edit-profile"
             type="button"
             className="btn btn-sm"
-            onClick={() => setActiveMenu('mandate')}
+            onClick={() => setActiveMenu('security')}
             style={{
               width: '100%',
               justifyContent: 'center',
@@ -480,14 +527,14 @@ export function AdminDashboard({ onNavigate }) {
               borderRadius: '7px',
               gap: '0.35rem',
               fontWeight: 700,
-              border: '1.5px solid #7c3aed',
-              color: activeMenu === 'mandate' ? '#ffffff' : '#7c3aed',
-              background: activeMenu === 'mandate' ? '#7c3aed' : '#f5f3ff',
+              border: '1.5px solid #1d4ed8',
+              color: activeMenu === 'security' ? '#ffffff' : '#1d4ed8',
+              background: activeMenu === 'security' ? '#1d4ed8' : '#eff6ff',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(124, 58, 237, 0.15)'
+              boxShadow: '0 1px 3px rgba(29, 78, 216, 0.15)'
             }}
-            title="Executive Mandate & Account Security Settings"
+            title="Master Security Controls & System Administration"
           >
             <ShieldCheck size={12} /> Master Security Controls
           </button>
@@ -509,11 +556,11 @@ export function AdminDashboard({ onNavigate }) {
           }}
         >
           <div>
-            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               ROHIT MEENA — Executive Admin Suite
             </h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-              Central Hub: <strong>Jamawaramgarh Regional Desk, Jaipur</strong> | Master Access: <strong>All Customer Accounts, Staff Officers & Financial Flow</strong>
+              Headquarter: <strong>{adminHQ}</strong> • Master Administrative Controls
             </p>
           </div>
 
@@ -521,7 +568,7 @@ export function AdminDashboard({ onNavigate }) {
             <button className="btn btn-primary btn-sm" onClick={() => setShowDirectCustModal(true)}>
               <UserPlus size={14} /> + New Customer
             </button>
-            <button className="btn btn-purple btn-sm" onClick={() => setShowStaffModal(true)}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowStaffModal(true)}>
               <UserCheck size={14} /> + Add Staff Officer
             </button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowDelegationModal(true)}>
@@ -1000,7 +1047,7 @@ export function AdminDashboard({ onNavigate }) {
                   className="form-input"
                   style={{ width: '200px', fontSize: '0.84rem' }}
                 />
-                <button className="btn btn-purple btn-sm" onClick={() => setShowStaffModal(true)}>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowStaffModal(true)}>
                   <UserPlus size={14} /> + Onboard Staff Officer
                 </button>
               </div>
@@ -1015,6 +1062,7 @@ export function AdminDashboard({ onNavigate }) {
                     <th>Official Login</th>
                     <th>Department</th>
                     <th>Branch Desk</th>
+                    <th>Authority Status</th>
                     <th>Live Duty Status</th>
                     <th>Attendance Records</th>
                     <th>Administrative Actions</th>
@@ -1023,6 +1071,8 @@ export function AdminDashboard({ onNavigate }) {
                 <tbody>
                   {filteredStaff.map((st) => {
                     const isCheckedIn = st.attendance?.status === 'Checked In';
+                    const isBlocked = st.status === 'Blocked';
+                    const isRevoked = st.status === 'Revoked';
                     return (
                       <tr key={st.id}>
                         <td>
@@ -1035,6 +1085,21 @@ export function AdminDashboard({ onNavigate }) {
                         <td style={{ fontSize: '0.82rem' }}>{st.email}</td>
                         <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{st.department}</td>
                         <td style={{ fontSize: '0.82rem' }}>{st.branch}</td>
+                        <td>
+                          {isBlocked ? (
+                            <span className="badge badge-amber" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.68rem' }}>
+                              ● BLOCKED
+                            </span>
+                          ) : isRevoked ? (
+                            <span className="badge badge-red" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: '0.68rem' }}>
+                              ● ACCESS REVOKED
+                            </span>
+                          ) : (
+                            <span className="badge badge-green" style={{ fontSize: '0.68rem' }}>
+                              ● ACTIVE
+                            </span>
+                          )}
+                        </td>
                         <td>
                           <span className={`badge ${isCheckedIn ? 'badge-green' : 'badge-amber'}`}>
                             {isCheckedIn ? '● ON DUTY' : 'OFF DUTY'}
@@ -1054,10 +1119,10 @@ export function AdminDashboard({ onNavigate }) {
                           </div>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                             <button
                               className="btn btn-secondary btn-sm"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                              style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem' }}
                               onClick={() => {
                                 adminUpdateStaffAttendance(
                                   st.staffId || st.id,
@@ -1076,7 +1141,7 @@ export function AdminDashboard({ onNavigate }) {
                             </button>
                             <button
                               className="btn btn-secondary btn-sm"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                              style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem' }}
                               onClick={() => {
                                 setSelectedUserForReset(st);
                                 setNewPasswordInput('staff123');
@@ -1084,19 +1149,50 @@ export function AdminDashboard({ onNavigate }) {
                               }}
                               title="Reset Staff Password"
                             >
-                              <Key size={12} /> Reset
+                              <Key size={12} /> Password
                             </button>
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
-                              onClick={() => {
-                                toggleUserStatus(st.id, currentUser);
-                                setFeedback({ type: 'success', text: `Status updated for ${st.name}!` });
-                              }}
-                              title="Suspend or Re-enable"
-                            >
-                              {st.status === 'Active' ? <Lock size={12} /> : <Unlock size={12} />}
-                            </button>
+                            {isBlocked ? (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#16a34a', borderColor: '#bbf7d0' }}
+                                onClick={() => handleUpdateStaffAuthority(st, 'Active')}
+                                title="Unblock Staff Officer"
+                              >
+                                <Unlock size={12} /> Unblock
+                              </button>
+                            ) : (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#d97706', borderColor: '#fde68a' }}
+                                onClick={() => handleUpdateStaffAuthority(st, 'Blocked')}
+                                title="Block Staff Officer Access"
+                              >
+                                <Lock size={12} /> Block
+                              </button>
+                            )}
+                            {isRevoked ? (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#1d4ed8', borderColor: '#bfdbfe' }}
+                                onClick={() => handleUpdateStaffAuthority(st, 'Active')}
+                                title="Restore Staff Access"
+                              >
+                                <ShieldCheck size={12} /> Restore
+                              </button>
+                            ) : (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#dc2626', borderColor: '#fecaca' }}
+                                onClick={() => {
+                                  if (window.confirm(`Revoke all administrative access and terminate privileges for ${st.name}?`)) {
+                                    handleUpdateStaffAuthority(st, 'Revoked');
+                                  }
+                                }}
+                                title="Revoke Staff Access Permanently"
+                              >
+                                <ShieldOff size={12} /> Revoke
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1521,31 +1617,56 @@ export function AdminDashboard({ onNavigate }) {
           </div>
         )}
 
-        {/* ===================== TAB 10: EXECUTIVE GOVERNANCE & MANDATE ===================== */}
-        {activeMenu === 'mandate' && (
+        {/* ===================== TAB 10: MASTER SECURITY CONTROLS & ADMINISTRATION ===================== */}
+        {activeMenu === 'security' && (
           <div className="grid-2col-even" style={{ gap: '1.5rem' }}>
+            {/* Panel 1: Security Controls & Headquarter Administration */}
             <div className="glass-panel" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ShieldCheck size={22} color="#7c3aed" /> Rohit Meena's Executive Mandate
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
+                <ShieldCheck size={22} color="#1d4ed8" /> Master Security Controls & Governance
               </h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                As Principal Owner of <strong>Rajasthan Pay Reserve Capital</strong>, all staff appointments, customer credit allowances, and domain identities operate under your sole authority.
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                Principal executive governance controls for <strong>Rajasthan Pay Reserve Capital</strong>. You hold sole authority over staff appointments, operational headquarters, and system policies.
               </p>
-              <div style={{ background: '#f8fafc', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+
+              {/* Headquarter Management Box */}
+              <div style={{ background: '#f8fafc', padding: '1rem 1.15rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0', marginBottom: '1.15rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Active Headquarter Location
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}
+                    onClick={() => {
+                      setHqInput(adminHQ);
+                      setShowHQModal(true);
+                    }}
+                  >
+                    <Edit3 size={12} /> Edit HQ
+                  </button>
+                </div>
+                <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#1e293b' }}>
+                  {adminHQ}
+                </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.84rem' }}>
                 <div><strong>Founder & Owner:</strong> ROHIT MEENA</div>
-                <div><strong>Official Direct Email:</strong> rohitmeena@rprcapital.com</div>
-                <div><strong>Corporate Gate Email:</strong> contact@rprcapital.in</div>
-                <div><strong>Central Branch Hub:</strong> Jamawaramgarh Regional Hub, Jaipur (Rajasthan - 303109)</div>
-                <div><strong>Entity Full Title:</strong> Rajasthan Pay Reserve Capital (RPR)</div>
+                <div><strong>Authorized Login:</strong> {currentUser?.email || 'rprcapital2624@gmail.com'}</div>
+                <div><strong>Authority Level:</strong> Super Administrator (Master Authority)</div>
+                <div><strong>Entity Name:</strong> Rajasthan Pay Reserve Capital (RPR)</div>
               </div>
             </div>
 
-            <div className="glass-panel-purple" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '1rem', color: 'var(--color-purple-glow)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <RotateCcw size={22} /> Demonstration State Reset
+            {/* Panel 2: Demonstration State Reset */}
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.85rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RotateCcw size={22} color="#475569" /> System Data Reset & Baseline
               </h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                Need to restart fresh with the default demo dataset? This will restore initial staff, customer accounts, and pending queue back to their pristine baseline.
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                Need to restart fresh with pristine baseline records? This will restore initial staff, customer accounts, vouchers, and pending queue back to their clean baseline.
               </p>
               <button
                 className="btn btn-secondary"
@@ -1564,7 +1685,7 @@ export function AdminDashboard({ onNavigate }) {
 
         {/* Minimal Portal Footer inside scrollable pane */}
         <footer style={{ marginTop: '3.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.78rem', color: '#64748b' }}>
-          © {new Date().getFullYear()} <strong>RPR : Rajasthan Pay Reserve Capital</strong> • Jamawaramgarh Regional Hub, Jaipur • Master Executive Administration
+          © {new Date().getFullYear()} <strong>RPR : Rajasthan Pay Reserve Capital</strong> • {adminHQ} • Master Executive Administration
         </footer>
       </main>
 
@@ -2078,6 +2199,52 @@ export function AdminDashboard({ onNavigate }) {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Change Headquarter Location */}
+      {showHQModal && (
+        <div className="modal-overlay" onClick={() => setShowHQModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Update Headquarter</h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  Set official operational central hub for RPR Capital
+                </p>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowHQModal(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveHQ}>
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem' }}>
+                  Headquarter Location Name *
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Jaipur Central HQ"
+                  value={hqInput}
+                  onChange={(e) => setHqInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.35rem' }}>
+                  This updates the official location across your administrative oversight and vouchers.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowHQModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

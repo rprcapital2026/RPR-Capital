@@ -1529,28 +1529,24 @@ input[type="range"]::-webkit-slider-thumb {
   transition: transform 0.2s ease;
 }
 
-.tab-btn.active {
-  color: #1d4ed8;
-  background: #dbeafe;
-  border-color: #93c5fd;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
+.tab-btn.active, .tab-btn.active.purple, .tab-btn.purple.active {
+  color: #1d4ed8 !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 10px rgba(29, 78, 216, 0.12) !important;
 }
 
-.tab-btn.active.purple, .tab-btn.purple.active {
-  color: #7c3aed;
-  background: #f3e8ff;
-  border-color: #d8b4fe;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+.tab-btn.active svg, .tab-btn.active.purple svg, .tab-btn.purple.active svg {
+  color: #1d4ed8 !important;
 }
 
-.tab-btn.purple:hover {
-  color: #7c3aed;
-  background: #faf5ff;
-  border-color: #e9d5ff;
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+.tab-btn:hover, .tab-btn.purple:hover {
+  color: #1d4ed8 !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: translateX(3px) !important;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.08) !important;
 }
 
 /* Red Exit / Logout Button */
@@ -2084,8 +2080,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .sidebar-bottom-profile-card.admin-card:hover {
-  border-color: #7c3aed !important;
-  box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.22), 0 4px 8px rgba(0, 0, 0, 0.04) !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.2), 0 4px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
 .sidebar-bottom-profile-card:hover .badge-green {

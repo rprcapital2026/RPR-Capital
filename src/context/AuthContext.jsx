@@ -28,11 +28,19 @@ export function AuthProvider({ children }) {
     return null;
   });
 
-  // Keep session safely synced with live data in case user profile gets updated
+  // Keep session safely synced with live data and immediately kick out blocked/revoked accounts
   useEffect(() => {
     if (currentUser && Array.isArray(users)) {
       const updatedUser = users.find((u) => u && u.id === currentUser.id);
       if (updatedUser) {
+        if (updatedUser.status === 'Blocked' || updatedUser.status === 'Revoked' || updatedUser.status === 'Suspended/Frozen') {
+          console.warn('[Security Guard] Current session user has been blocked/revoked by Admin. Terminating session.');
+          setCurrentUser(null);
+          try {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+          } catch {}
+          return;
+        }
         setCurrentUser(updatedUser);
         try {
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
@@ -58,6 +66,9 @@ export function AuthProvider({ children }) {
       });
       const data = await res.json();
       if (data && data.success && data.user) {
+        if (data.user.status === 'Blocked' || data.user.status === 'Revoked' || data.user.status === 'Suspended/Frozen') {
+          return { success: false, message: 'This account has been blocked/revoked by Executive Admin Rohit Meena. Access is strictly restricted.' };
+        }
         setCurrentUser(data.user);
         try {
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
@@ -74,15 +85,15 @@ export function AuthProvider({ children }) {
     const trimmedEmail = email.trim().toLowerCase();
     const safeUsers = Array.isArray(users) ? users : [];
     
-    // Support aliases: vikram@rprcapital.in, vikram@example.com, etc.
+    // Direct match or admin match
     let found = safeUsers.find((u) => u && typeof u.email === 'string' && u.email.toLowerCase() === trimmedEmail);
     if (!found) {
-      if (trimmedEmail.startsWith('vikram@')) {
-        found = safeUsers.find((u) => u.role === 'customer');
+      if (trimmedEmail === 'rprcapital2624@gmail.com' || trimmedEmail.startsWith('admin@') || trimmedEmail.startsWith('rohit@')) {
+        found = safeUsers.find((u) => u.role === 'admin');
       } else if (trimmedEmail.startsWith('staff@') || trimmedEmail.startsWith('pooja@')) {
         found = safeUsers.find((u) => u.role === 'staff');
-      } else if (trimmedEmail.startsWith('admin@') || trimmedEmail.startsWith('rohit@')) {
-        found = safeUsers.find((u) => u.role === 'admin');
+      } else if (trimmedEmail.startsWith('vikram@')) {
+        found = safeUsers.find((u) => u.role === 'customer');
       }
     }
 
@@ -100,10 +111,10 @@ export function AuthProvider({ children }) {
       };
     }
 
-    if (found.status === 'Suspended/Frozen') {
+    if (found.status === 'Blocked' || found.status === 'Revoked' || found.status === 'Suspended/Frozen') {
       return {
         success: false,
-        message: 'This account has been temporarily restricted by Administration. Please contact contact@rprcapital.in.'
+        message: 'This staff/employee account has been blocked or revoked by Executive Admin Rohit Meena. Access Denied.'
       };
     }
 

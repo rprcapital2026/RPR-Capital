@@ -11,6 +11,7 @@ import {
   toggleStaffAttendanceRecord,
   createStaffOfficer,
   toggleUserStatusRecord,
+  setUserAuthorityRecord,
   updateUserProfile,
   recordCustomerComplaint,
   loadSnapshot,
@@ -81,8 +82,8 @@ router.post('/auth/login', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Incorrect password.' });
   }
 
-  if (found.status === 'Suspended/Frozen') {
-    return res.status(403).json({ success: false, message: 'This account has been restricted by Administration.' });
+  if (found.status === 'Blocked' || found.status === 'Revoked' || found.status === 'Suspended/Frozen') {
+    return res.status(403).json({ success: false, message: 'This account has been blocked or revoked by Executive Admin Rohit Meena. Access Denied.' });
   }
 
   res.json({ success: true, user: sanitizeUser(found) });
@@ -218,12 +219,27 @@ router.post('/staff', async (req, res) => {
   }
 });
 
-// 13. Toggle User Status (Active / Frozen)
+// 13. Toggle User Status (Active / Blocked)
 router.put('/users/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { actor } = req.body;
     const result = await toggleUserStatusRecord(id, actor);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 13b. Set User Authority (Active / Blocked / Revoked) by Admin
+router.put('/users/:id/authority', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, actor } = req.body;
+    const result = await setUserAuthorityRecord(id, status, actor);
     if (!result.success) {
       return res.status(404).json(result);
     }

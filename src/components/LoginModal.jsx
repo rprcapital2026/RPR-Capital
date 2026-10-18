@@ -23,9 +23,9 @@ import {
 export function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const { login, loginAsPreset } = useAuth();
 
-  const [selectedRole, setSelectedRole] = useState('admin'); // 'admin', 'staff', 'customer'
-  const [email, setEmail] = useState('admin@rprcapital.com');
-  const [password, setPassword] = useState('admin123');
+  const [selectedRole, setSelectedRole] = useState('customer'); // 'customer', 'staff', 'admin'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,49 +33,45 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   useEffect(() => {
     if (isOpen) {
       setError('');
+      setEmail('');
+      setPassword('');
     }
   }, [isOpen]);
 
-  // Profile presets metadata directly reflecting the documents
+  // Profile roles metadata - Clean, institutional, no private data leaked
   const profiles = [
     {
-      role: 'admin',
-      icon: Crown,
-      name: 'Rohit Meena',
-      designation: 'Website Owner & Admin',
-      badge: '👑 Admin (Rohit Meena)',
-      defaultEmail: 'admin@rprcapital.com',
-      defaultPassword: 'admin123',
-      color: '#0284c7',
-      bgGlow: 'rgba(0, 132, 255, 0.08)',
-      borderColor: 'rgba(0, 132, 255, 0.4)',
-      scope: 'Complete administrative oversight across customer and staff records'
+      role: 'customer',
+      icon: User,
+      name: 'Customer Account',
+      designation: 'Account Holder Portal',
+      badge: 'Customer Portal',
+      color: '#059669',
+      bgGlow: 'rgba(16, 185, 129, 0.08)',
+      borderColor: 'rgba(16, 185, 129, 0.4)',
+      scope: 'Access savings balance, passbook statement, and credit portfolio'
     },
     {
       role: 'staff',
       icon: Users,
-      name: 'Pooja Sharma',
-      designation: 'Credit & Verification Staff',
-      badge: '👔 Staff Officer',
-      defaultEmail: 'staff@rprcapital.com',
-      defaultPassword: 'staff123',
-      color: '#7c3aed',
-      bgGlow: 'rgba(147, 51, 234, 0.08)',
-      borderColor: 'rgba(147, 51, 234, 0.4)',
-      scope: 'Enroll customer accounts, verify KYC and collect deposits'
+      name: 'Staff Officer Desk',
+      designation: 'Operations & Verification',
+      badge: 'Staff Desk',
+      color: '#1d4ed8',
+      bgGlow: 'rgba(37, 99, 235, 0.08)',
+      borderColor: 'rgba(37, 99, 235, 0.4)',
+      scope: 'Branch field operations, customer enrollment, deposit and collection desk'
     },
     {
-      role: 'customer',
-      icon: User,
-      name: 'Vikram Singh',
-      designation: 'Authorized Customer',
-      badge: '👤 Customer Account',
-      defaultEmail: 'vikram@example.com',
-      defaultPassword: 'cust123',
-      color: '#059669',
-      bgGlow: 'rgba(16, 185, 129, 0.08)',
-      borderColor: 'rgba(16, 185, 129, 0.4)',
-      scope: 'View savings balance, passbook, credit portfolio & statements'
+      role: 'admin',
+      icon: Crown,
+      name: 'Executive Administration',
+      designation: 'Master Control & Oversight',
+      badge: 'Central Admin',
+      color: '#1e3a8a',
+      bgGlow: 'rgba(30, 58, 138, 0.08)',
+      borderColor: 'rgba(30, 58, 138, 0.4)',
+      scope: 'Administrative oversight, ledger audit, and institutional governance'
     }
   ];
 
@@ -84,26 +80,8 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const handleSelectRole = (role) => {
     setSelectedRole(role);
     setError('');
-    const target = profiles.find((p) => p.role === role);
-    if (target) {
-      setEmail(target.defaultEmail);
-      setPassword(target.defaultPassword);
-    }
-  };
-
-  const handleQuickLogin = (role) => {
-    setError('');
-    setIsLoading(true);
-    setTimeout(() => {
-      const res = loginAsPreset(role);
-      setIsLoading(false);
-      if (res.success) {
-        onClose();
-        if (onLoginSuccess) onLoginSuccess();
-      } else {
-        setError(res.message);
-      }
-    }, 250);
+    setEmail('');
+    setPassword('');
   };
 
   const handleSubmitLogin = async (e) => {
@@ -239,42 +217,8 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }) {
             </div>
 
             {/* Instant 1-Click Login Action for Selected Role */}
-            <div className="quick-instant-box" style={{ borderColor: currentProfile.borderColor }}>
-              <div className="quick-instant-info">
-                <div>
-                  <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: currentProfile.color, fontWeight: 700, letterSpacing: '0.04em' }}>
-                    Instant Persona Login
-                  </div>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
-                    Login directly as {currentProfile.name} ({currentProfile.badge})
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn btn-sm"
-                style={{
-                  background: currentProfile.color,
-                  color: '#ffffff',
-                  boxShadow: `0 4px 14px ${currentProfile.borderColor}`,
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.84rem'
-                }}
-                disabled={isLoading}
-                onClick={() => handleQuickLogin(selectedRole)}
-              >
-                <Zap size={14} /> Instant Access
-              </button>
-            </div>
-
             {/* Step 2: Credentials Form for Selected Role */}
-            <form onSubmit={handleSubmitLogin} style={{ marginTop: '1.2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                  Or Authenticate With Credentials
-                </span>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-              </div>
+            <form onSubmit={handleSubmitLogin} style={{ marginTop: '1rem' }}>
 
               <div className="form-group">
                 <label className="form-label">

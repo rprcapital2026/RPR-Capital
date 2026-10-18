@@ -46,8 +46,8 @@
     {
       "id": "usr_admin_1",
       "name": "Rohit Meena",
-      "email": "admin@rprcapital.in",
-      "password": "admin123",
+      "email": "rprcapital2624@gmail.com",
+      "password": "Admin@rprcapital",
       "role": "admin",
       "title": "Company Owner & Super Admin",
       "avatarBg": "gradient-admin",
@@ -68,7 +68,7 @@
       "avatarBg": "gradient-staff",
       "status": "Active",
       "attendance": {
-        "status": "Checked In",
+        "status": "Checked Out",
         "clockInTime": "09:30 AM",
         "shiftDurationHours": 8,
         "countdownEndTimestamp": 1792344359739,
@@ -450,6 +450,22 @@
   ],
   "auditLogs": [
     {
+      "id": "LOG-5051",
+      "action": "Staff Authority: Active",
+      "actor": "Admin Rohit Meena",
+      "target": "Pooja Sharma (staff)",
+      "details": "Administrative authority set to: Active",
+      "timestamp": "18 Oct 2026, 6:51 pm"
+    },
+    {
+      "id": "LOG-4972",
+      "action": "Staff Authority: Blocked",
+      "actor": "Admin Rohit Meena",
+      "target": "Pooja Sharma (staff)",
+      "details": "Administrative authority set to: Blocked",
+      "timestamp": "18 Oct 2026, 6:51 pm"
+    },
+    {
       "id": "LOG-901",
       "action": "Deposit Recorded",
       "actor": "Pooja Sharma (Staff)",
@@ -529,7 +545,7 @@
       "grantedDate": "2026-10-10",
       "validTill": "2026-12-31",
       "tokenPasskey": "DLG-JMW-8821",
-      "status": "Active"
+      "status": "Revoked"
     }
   ]
 }

@@ -732,21 +732,51 @@ export async function toggleUserStatusRecord(userId, actor) {
   const targetUser = snapshot.users.find((u) => u.id === userId);
   if (!targetUser) return { success: false, message: 'User not found.' };
 
-  const newStatus = targetUser.status === 'Active' ? 'Suspended/Frozen' : 'Active';
+  const newStatus = targetUser.status === 'Active' ? 'Blocked' : 'Active';
+  return setUserAuthorityRecord(userId, newStatus, actor);
+}
+
+// Set User Authority (Active / Blocked / Revoked) by Admin
+export async function setUserAuthorityRecord(userId, newStatus, actor) {
+  const snapshot = loadSnapshot();
+  const targetUser = (snapshot.users || []).find((u) => u.id === userId || u.staffId === userId);
+  if (!targetUser) return { success: false, message: 'User not found.' };
+
   targetUser.status = newStatus;
+  if (newStatus === 'Blocked' || newStatus === 'Revoked') {
+    if (targetUser.attendance) {
+      targetUser.attendance.status = 'Checked Out';
+    }
+    if (snapshot.delegatedAdmins) {
+      snapshot.delegatedAdmins = snapshot.delegatedAdmins.map((d) => {
+        if (d.staffId === targetUser.staffId || d.staffId === targetUser.id) {
+          return { ...d, status: 'Revoked' };
+        }
+        return d;
+      });
+    }
+  }
 
   const newAudit = {
     id: `LOG-${Date.now().toString().slice(-4)}`,
-    action: `User Status: ${newStatus}`,
-    actor: actor?.name || 'Admin',
+    action: `Staff Authority: ${newStatus}`,
+    actor: actor?.name || 'Executive Admin Rohit Meena',
     target: `${targetUser.name} (${targetUser.role})`,
-    details: `Status altered to ${newStatus}`,
+    details: `Administrative authority set to: ${newStatus}`,
     timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
   };
 
   if (isMongoActive()) {
     try {
-      await User.updateOne({ id: targetUser.id }, { $set: { status: newStatus } });
+      await User.updateOne(
+        { id: targetUser.id },
+        { 
+          $set: { 
+            status: newStatus, 
+            ...(newStatus === 'Blocked' || newStatus === 'Revoked' ? { 'attendance.status': 'Checked Out' } : {}) 
+          } 
+        }
+      );
       await AuditLog.create(newAudit);
     } catch (e) {
       console.warn('[MongoDB Atlas User Status Update Error]:', e.message);
@@ -758,6 +788,7 @@ export async function toggleUserStatusRecord(userId, actor) {
 
   return { success: true, user: targetUser };
 }
+
 
 // Update User Profile (Customer, Staff, Admin)
 export async function updateUserProfile(userId, profileData) {
